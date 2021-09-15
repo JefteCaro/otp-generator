@@ -15,23 +15,18 @@ class OTPServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $this->mergeConfigFrom($this->configPath(), 'otp-generator');
-
-        $this->app->singleton(OTPGenerator::class, function($app) {
-            return new OTPGenerator();
-        });
-
+        $this->mergeConfigFrom($this->configPath(), 'otp-config');
 
         if ($this->app->runningInConsole()) {
             $this->publishes([
                 $this->configPath() => $this->app->configPath('otp.php'),
-            ], 'otp-generator');
+            ], 'otp-config');
+
+            $this->publishes([
+                $this->resourcePath('migrations/create_otp_tokens_table.php') => database_path(sprintf('migrations/%s_%s',  date('Y_m_d_His'), 'create_otp_tokens_table.php')),
+            ], 'otp-migration');
         }
 
-
-        $this->app->bind('otp-generator', function ($app) {
-            return $app->make('otp-generator');
-        });
     }
 
     /**
@@ -41,13 +36,7 @@ class OTPServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        $this->app->singleton(OTPGenerator::class, function($app) {
-            return new OTPGenerator();
-        });
 
-        $this->publishes(
-            [$this->configPath() => config_path('otp.php')],
-            'otp-generator');
     }
 
     /**
@@ -58,6 +47,12 @@ class OTPServiceProvider extends ServiceProvider
     protected function configPath()
     {
         return __DIR__ . '/resources/config/otp.php';
+    }
+
+
+    protected function resourcePath($path)
+    {
+        return __DIR__ . '/resources/' . $path;
     }
 
 }
